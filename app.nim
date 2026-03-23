@@ -1,7 +1,8 @@
 import std/strformat
 import std/strutils
 import std/sequtils
-
+import std/[json,jsonutils]
+ 
 type 
   TaskStatus = enum
       Todo, Doing, Done
@@ -13,8 +14,11 @@ type
 
 
 # helpers
-proc getStatusfromString() : TaskStatus =
-  echo "1.TODO 2.DOING 3.Done"
+proc appendJsonToFile(filename: string, jsonStr: string) =
+  ## Appends a JSON string to a file, adding a newline for separation.
+  var f = open(filename, fmAppend)
+  defer: f.close() # Ensures file closes even if error occurs
+  f.writeLine(jsonStr)
   
 
 
@@ -24,13 +28,21 @@ var nextID = 0;
 
 #show tasks 
 proc showtasks() =
-    if len(todolist) == 0:
-      echo "No Tasks Added...."
+    var f: File
+    if open(f,"tasks.json",fmRead):
+      if getFileSize(f) == 0:
+        echo "No Tasks Added Yet!"
+        f.close()
+        return
+    for line in lines("tasks.json"):
+      if line.strip() == "": continue # Skip empty lines
+      let task = parseJson(line)
+      echo "Title: ", task["description"].getStr()
+      echo "Task-ID: ", task["t_id"].getint()
+      echo "Status: ", task["status"].getStr()
+      echo "-------------------"
 
-    for i,task in todolist:
-      let statusStr = $task.status
-      let id = $task.t_id
-      echo &"{id}. [{statusStr}] {task.description}"
+
  
 
 
@@ -39,6 +51,11 @@ proc addTask(desc: string) =
     let newTask: Task = Task(description: desc, status: Todo, t_id: nextID)
     todolist.add(newTask)
     inc nextID
+    let jsonString = $newTask.toJson()
+    appendJsonToFile("tasks.json", jsonString)
+
+
+
 
 
 # discard Task
@@ -97,12 +114,13 @@ proc menu() =
         var newenum: int = parseInt(readline(stdin))
         updateTask(target,newenum)
 
-
     if choice == 4 :
       echo "Enter the Task-ID to Remove: "
       var target: int = parseInt(readline(stdin))
       discardTask(target)
-  
+    if choice == 5:
+      echo "Exiting Application"
+      break
 
 when isMainModule:
   menu()
