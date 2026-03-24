@@ -3,14 +3,12 @@ import std/strutils
 import std/sequtils
 import std/[json,jsonutils]
  
-type 
-  TaskStatus = enum
-      Todo, Doing, Done
-
-  Task = object
-        description: string
-        status: TaskStatus
-        t_id: int 
+var TaskStatus: seq[string] = @["TODO","DOING","DONE"] 
+type
+  Task = object    
+    description: string
+    status: string
+    t_id: int 
 
 
 # helpers
@@ -48,14 +46,11 @@ proc showtasks() =
 
 #add task
 proc addTask(desc: string) =
-    let newTask: Task = Task(description: desc, status: Todo, t_id: nextID)
+    let newTask: Task = Task(description: desc, status:TaskStatus[0] , t_id: nextID)
     todolist.add(newTask)
     inc nextID
     let jsonString = $newTask.toJson()
     appendJsonToFile("tasks.json", jsonString)
-
-
-
 
 
 # discard Task
@@ -71,15 +66,14 @@ proc discardTask(id: int) =
       echo "Invalid Id!"
 
 # update Task 
-proc updateTask(id: int, newenum: int) =
+proc updateTask(id: int, newstatus: string) =
     for i in 0 ..< todolist.len:
       if todolist[i].t_id == id:
-        todolist[i].status = TaskStatus(newenum)
+        todolist[i].status = newstatus
         echo "Status Changed!"
         break
       else:
         echo "Invalid ID"
-
 
 
 # menu
@@ -110,9 +104,9 @@ proc menu() =
         echo "Enter The Id of Task: "
         var target: int = parseInt(readline(stdin))
         echo "Enter the Update OPTION:  "
-        echo "0.TODO 1.DOING 2.DONE"
-        var newenum: int = parseInt(readline(stdin))
-        updateTask(target,newenum)
+        echo "TODO/DOING/DONE"
+        var newstring: string = readline(stdin)
+        updateTask(target,newstring)
 
     if choice == 4 :
       echo "Enter the Task-ID to Remove: "
