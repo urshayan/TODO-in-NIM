@@ -55,25 +55,41 @@ proc addTask(desc: string) =
 
 # discard Task
 proc discardTask(id: int) =
+    var updateTasks : seq[string] = @[]
 
-  for i in 0 ..< todolist.len:
-    if todolist[i].t_id == id:
-        echo "Deleted Task : " , todolist[i].description
-        del(todolist, i)
-        
-        break
-    else:
-      echo "Invalid Id!"
+    for line in lines("tasks.json"):
+      if line.strip() == "":continue
+
+      let task = parseJson(line)
+
+      if task["t_id"].getInt() != id:
+        updateTasks.add(line)
+
+    writeFile("tasks.json", updateTasks.join("\n") & "\n")
+    echo "Task Deleted!"
+
+
 
 # update Task 
 proc updateTask(id: int, newstatus: string) =
-    for i in 0 ..< todolist.len:
-      if todolist[i].t_id == id:
-        todolist[i].status = newstatus
-        echo "Status Changed!"
-        break
+    
+    var updateTasks : seq[string] = @[]
+    var trimmed : seq[string] = @[]
+    for line in lines("tasks.json"):
+      if line.strip() == "":continue
+      let task = parseJson(line)
+
+      if task["t_id"].getInt() == id:
+
+        task["status"] = %newstatus
+        updateTasks.add($task)
+
       else:
-        echo "Invalid ID"
+        updateTasks.add(line)
+    writeFile("tasks.json", updateTasks.join("\n") & "\n")
+    echo "Task Updated!"
+
+
 
 
 # menu
